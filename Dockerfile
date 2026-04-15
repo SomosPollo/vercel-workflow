@@ -10,6 +10,10 @@ RUN npm install --ignore-scripts workflow@${WORKFLOW_VERSION} ${WORKFLOW_TARGET_
 
 FROM node:22-alpine
 
+LABEL org.opencontainers.image.source="https://github.com/SomosPollo/vercel-workflow"
+LABEL org.opencontainers.image.description="Vercel Workflow image with pre-installed world"
+LABEL org.opencontainers.image.licenses="MIT"
+
 ARG WORKFLOW_TARGET_WORLD=@workflow/world-postgres
 
 ENV NODE_ENV=production
