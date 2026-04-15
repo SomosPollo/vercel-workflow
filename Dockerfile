@@ -1,16 +1,21 @@
 FROM node:22-alpine AS build
 
+ARG WORKFLOW_VERSION=4.2.0-beta.76
+ARG WORKFLOW_TARGET_WORLD=@workflow/world-postgres
+
 WORKDIR /app
 
-RUN npm install --ignore-scripts workflow@4.2.0-beta.76 @workflow/world-postgres && \
+RUN npm install --ignore-scripts workflow@${WORKFLOW_VERSION} ${WORKFLOW_TARGET_WORLD} && \
     npm cache clean --force
 
 FROM node:22-alpine
 
+ARG WORKFLOW_TARGET_WORLD=@workflow/world-postgres
+
 ENV NODE_ENV=production
 ENV DO_NOT_TRACK=1
 ENV NODE_OPTIONS="--disable-warning=ExperimentalWarning"
-ENV WORKFLOW_TARGET_WORLD="@workflow/world-postgres"
+ENV WORKFLOW_TARGET_WORLD="${WORKFLOW_TARGET_WORLD}"
 ENV WORKFLOW_POSTGRES_URL=""
 ENV WORKFLOW_SERVER_URL=""
 

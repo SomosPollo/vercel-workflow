@@ -8,10 +8,19 @@ on:
       - '.github/workflows/build.yml'
   workflow_dispatch:
     inputs:
-      image_tag:
-        description: 'Image tag (defaults to workflow version)'
+      workflow_version:
+        description: 'Workflow package version (defaults to Dockerfile value)'
         required: false
         type: string
+      workflow_target_world:
+        description: 'Workflow world package (defaults to @workflow/world-postgres)'
+        required: false
+        type: string
+      latest:
+        description: 'Also tag as latest'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -35,16 +44,20 @@ jobs:
       - name: Resolve tag
         id: meta
         run: |
-          TAG="${{ inputs.image_tag }}"
-          if [ -z "$TAG" ]; then
-            TAG=$(grep -oP 'workflow@\K[^\s]+' Dockerfile)
+          VERSION="${{ inputs.workflow_version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep -oP 'WORKFLOW_VERSION=\K[^\s]+' Dockerfile)
           fi
-          echo "tag=${TAG:-${GITHUB_SHA::7}}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${VERSION:-${GITHUB_SHA::7}}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
         with:
           push: true
+          build-args: |
+            WORKFLOW_VERSION=${{ steps.meta.outputs.version }}
+            ${{ inputs.workflow_target_world && format('WORKFLOW_TARGET_WORLD={0}', inputs.workflow_target_world) || '' }}
           tags: |
             ghcr.io/somospollo/vercel-workflow-postgres:${{ steps.meta.outputs.tag }}
-            ghcr.io/somospollo/vercel-workflow-postgres:latest
+            ${{ (inputs.latest == true || inputs.latest == '') && 'ghcr.io/somospollo/vercel-workflow-postgres:latest' || '' }}
