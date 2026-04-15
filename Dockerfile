@@ -1,6 +1,6 @@
 FROM node:22-alpine AS build
 
-ARG WORKFLOW_VERSION=4.2.0-beta.76
+ARG WORKFLOW_VERSION=4.2.2
 ARG WORKFLOW_TARGET_WORLD=@workflow/world-postgres
 
 WORKDIR /app
@@ -9,6 +9,8 @@ RUN npm install --ignore-scripts workflow@${WORKFLOW_VERSION} ${WORKFLOW_TARGET_
     npm cache clean --force
 
 FROM node:22-alpine
+
+RUN apk upgrade --no-cache
 
 LABEL org.opencontainers.image.source="https://github.com/SomosPollo/vercel-workflow"
 LABEL org.opencontainers.image.description="Vercel Workflow image with pre-installed world"
