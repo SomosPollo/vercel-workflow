@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:24-alpine AS build
 
 ARG WORKFLOW_VERSION=4.2.5
 ARG WORKFLOW_TARGET_WORLD=@workflow/world-postgres
@@ -8,7 +8,7 @@ WORKDIR /app
 RUN npm install --ignore-scripts workflow@${WORKFLOW_VERSION} ${WORKFLOW_TARGET_WORLD} && \
     npm cache clean --force
 
-FROM node:22-alpine
+FROM node:24-alpine
 
 RUN apk upgrade --no-cache
 
