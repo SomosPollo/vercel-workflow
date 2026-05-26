@@ -1,6 +1,6 @@
 FROM node:22-alpine AS build
 
-ARG WORKFLOW_VERSION=4.2.2
+ARG WORKFLOW_VERSION=4.2.5
 ARG WORKFLOW_TARGET_WORLD=@workflow/world-postgres
 
 WORKDIR /app
