@@ -1,68 +1,74 @@
 name: Build & Push
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "Dockerfile"
-      - ".github/workflows/build.yml"
-  workflow_dispatch:
-    inputs:
-      workflow_version:
-        description: "Workflow package version (defaults to Dockerfile value)"
-        required: false
-        type: string
-      workflow_target_world:
-        description: "Workflow world package (defaults to @workflow/world-postgres)"
-        required: false
-        type: string
-      latest:
-        description: "Also tag as latest"
-        required: false
-        type: boolean
-        default: true
+    push:
+        branches: [main]
+        paths:
+            - "Dockerfile"
+            - ".github/workflows/build.yml"
+    workflow_dispatch:
+        inputs:
+            workflow_version:
+                description: "Workflow package version (defaults to Dockerfile value)"
+                required: false
+                type: string
+            workflow_target_world:
+                description: "Workflow world package (defaults to @workflow/world-postgres)"
+                required: false
+                type: string
+            tag:
+                description: "Override image tag (e.g. 4.2.5-turso). Defaults to workflow version."
+                required: false
+                type: string
+            latest:
+                description: "Also tag as latest"
+                required: false
+                type: boolean
+                default: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+    build:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - name: Log in to GHCR
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Log in to GHCR
+              uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
-      - name: Resolve tag
-        id: meta
-        run: |
-          VERSION="${{ inputs.workflow_version }}"
-          if [ -z "$VERSION" ]; then
-            VERSION=$(grep -oP 'WORKFLOW_VERSION=\K[^\s]+' Dockerfile)
-          fi
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "tag=${VERSION:-${GITHUB_SHA::7}}" >> "$GITHUB_OUTPUT"
+            - name: Resolve tag
+              id: meta
+              run: |
+                  VERSION="${{ inputs.workflow_version }}"
+                  if [ -z "$VERSION" ]; then
+                    VERSION=$(grep -oP 'WORKFLOW_VERSION=\K[^\s]+' Dockerfile)
+                  fi
+                  echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+                  TAG="${{ inputs.tag }}"
+                  if [ -z "$TAG" ]; then TAG="${VERSION:-${GITHUB_SHA::7}}"; fi
+                  echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
-      - name: Build and push
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
-        with:
-          platforms: linux/amd64,linux/arm64
-          provenance: false
-          push: true
-          build-args: |
-            WORKFLOW_VERSION=${{ steps.meta.outputs.version }}
-            ${{ inputs.workflow_target_world && format('WORKFLOW_TARGET_WORLD={0}', inputs.workflow_target_world) || '' }}
-          tags: |
-            ghcr.io/somospollo/vercel-workflow-postgres:${{ steps.meta.outputs.tag }}
-            ${{ (inputs.latest == true || inputs.latest == '') && 'ghcr.io/somospollo/vercel-workflow-postgres:latest' || '' }}
+            - name: Build and push
+              uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+              with:
+                  platforms: linux/amd64,linux/arm64
+                  provenance: false
+                  push: true
+                  build-args: |
+                      WORKFLOW_VERSION=${{ steps.meta.outputs.version }}
+                      ${{ inputs.workflow_target_world && format('WORKFLOW_TARGET_WORLD={0}', inputs.workflow_target_world) || '' }}
+                  tags: |
+                      ghcr.io/somospollo/vercel-workflow:${{ steps.meta.outputs.tag }}
+                      ${{ (inputs.latest == true || inputs.latest == '') && 'ghcr.io/somospollo/vercel-workflow:latest' || '' }}
